@@ -16,17 +16,21 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
+import com.test1.gosecuapp3.model.Employe;
+import com.test1.gosecuapp3.model.Materiel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static String Json_Url2 = "https://run.mocky.io/v3/9db71cdf-a3c2-4f00-af79-288fe1f187dc";
+    private static String Json_Url2 = "https://raw.githubusercontent.com/Alexon1999/MSPR_JAVA-APP/master/web/data.json";
 
-    String login;
-    String password;
+    private static List<Employe> lesEmployes = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
         extractUser();
 
         TextView username =(TextView) findViewById(R.id.etName);
-        TextView password1 =(TextView) findViewById(R.id.etPassword);
+        TextView password =(TextView) findViewById(R.id.etPassword);
 
         Button loginbtn = (Button) findViewById(R.id.btnLogin);
 
@@ -45,10 +49,12 @@ public class MainActivity extends AppCompatActivity {
         loginbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(username.getText().toString().equals(login) && password1.getText().toString().equals(password)){
+                Employe emp = Employe.logIn(lesEmployes,username.getText().toString(), password.getText().toString());
+                if(emp != null){
                     //correct
                     Toast.makeText(MainActivity.this,"LOGIN SUCCESSFUL",Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(MainActivity.this, MaterielActivity.class);
+                    // TODO: passer les matériels dans l'autre écran emp.getMaterielsEmpruntes()
                     startActivity(intent);
                 }else
                     //incorrect
@@ -64,15 +70,20 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(JSONArray response) {
                 for (int i = 0; i < response.length(); i++) {
                     try {
-                        JSONObject songObject = response.getJSONObject(i);
-
-                        login = songObject.getString("login");
-                        password = songObject.getString("password");
+                        JSONObject emp = response.getJSONObject(i);
+                        Employe employe = new Employe(emp.getString("nom"), emp.getString("prenom"), emp.getString("imgUrl"), emp.getString("role"), emp.getString("mdp"));
+                        JSONArray materilsJsonArray = emp.getJSONArray("materielsEmpruntes");
+                        for (int j = 0; j < materilsJsonArray.length(); j++) {
+                            JSONObject mat = materilsJsonArray.getJSONObject(j);
+                            employe.addMateriel(new Materiel(mat.getString("code"), mat.getString("label")));
+                        }
+                        lesEmployes.add(employe);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
+                // System.out.println(lesEmployes);
             }
         }, new Response.ErrorListener() {
             /**
